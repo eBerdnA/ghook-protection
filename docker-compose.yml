@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  web:
+    container_name: mywebhooks
+    image: "reg.bering.in/webhook:latest"
+    command: gunicorn --workers=10 --bind 0.0.0.0:5000 wsgi:app
+    ports:
+      - "127.0.0.1:8081:5000"
+    env_file:
+      - ./.env
