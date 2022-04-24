@@ -131,7 +131,7 @@ def create_issue(base_query_url, headers, commit_url):
         + json.dumps(parsed, indent=4, sort_keys=True)
         + "\r\n```\r\n"
         + "Please see the documentation for a definition of the different options. - "
-        + "[Update branch protection](https://docs.github.com/en/rest/reference/branches#update-branch-protection)"
+        + "[Update branch protection](https://docs.github.com/en/rest/branches/branch-protection#update-branch-protection)"
     )
     if commit_url is not None:
         data["body"] += (
