@@ -42,7 +42,7 @@ The following values must be changed for your individual needs/environment.
 
 | environment variable | description | example |
 |--|--|--|
-| GITHUB_TOKEN | The [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) (OAuth) for GitHub which can used to interact with the API | abcdefghijklmnopqrstuvwxyz_0123456789abc |
+| GITHUB_TOKEN | The [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) (OAuth) for GitHub which can be used to interact with the API. The token must be for an account which has admin permission in the orgnization because only accounts with admin permissions can manage branch protection rules [Managing a branch protection rule - GitHub Docs](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/managing-a-branch-protection-rule). | abcdefghijklmnopqrstuvwxyz_0123456789abc |
 | GITHUB_OWNER | The GitHub handle of the person which should be mentioned | eberdna |
 | GITHUB_SECRET | The secret which is configured for the webhook at GitHub | Test1234 |
 | APP_URL | The URL under which the webhook application publicly accessible | https://myhook.example.org |
