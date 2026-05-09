@@ -15,6 +15,8 @@ app_url = os.environ["APP_URL"]
 readme_url = app_url + "/static/README.md"
 policy_url = app_url + "/static/restrict.json"
 
+POLICY_PATH = os.path.join(os.path.dirname(__file__), "web/static/restrict.json")
+
 
 @app.route("/", methods=["GET", "POST"])
 def hello_world():
@@ -97,9 +99,8 @@ def restrict_commits(base_query_url, headers, branch_name):
     """
     req_url = base_query_url + f"/branches/{branch_name}/protection"
     app.logger.log(10, req_url)
-    app.logger.info(f"loading policy from {policy_url}")
-    policy_def = requests.get(policy_url)
-    parsed = json.loads(policy_def.content.decode("utf8"))
+    with open(POLICY_PATH) as f:
+        parsed = json.load(f)
     restrict_request = requests.put(req_url, headers=headers, data=json.dumps(parsed))
     app.logger.log(10, restrict_request.content)
     app.logger.log(10, f"restrict_request.status_code: {restrict_request.status_code}")
@@ -118,8 +119,8 @@ def create_issue(base_query_url, headers, commit_url):
     """
     data = {}
     data["title"] = "Created branch protection rule"
-    policy_def = requests.get(policy_url)
-    parsed = json.loads(policy_def.content.decode("utf8"))
+    with open(POLICY_PATH) as f:
+        parsed = json.load(f)
     app.logger.log(10, json.dumps(parsed, indent=4, sort_keys=True))
     data["body"] = (
         "@"
@@ -146,14 +147,12 @@ def create_issue(base_query_url, headers, commit_url):
 
 
 def validate_signature(request):
-    key = os.getenv("GITHUB_SECRET")
-    key = bytes(key, "utf-8")
+    key = bytes(os.getenv("GITHUB_SECRET"), "utf-8")
     expected_signature = hmac.new(
-        key=key, msg=request.data, digestmod=hashlib.sha1
+        key=key, msg=request.data, digestmod=hashlib.sha256
     ).hexdigest()
-    incoming_signature = (
-        request.headers.get("X-Hub-Signature").split("sha1=")[-1].strip()
-    )
+    incoming_signature = request.headers.get("X-Hub-Signature-256", "")
+    incoming_signature = incoming_signature.split("sha256=")[-1].strip()
     return hmac.compare_digest(incoming_signature, expected_signature)
 
 
