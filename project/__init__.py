@@ -44,17 +44,18 @@ def create_initial_commit(base_query_url, headers, branchname):
     str
         full qualified url of pointing to created commit
     """
-    content = {}
-    content["branch"] = branchname
-    content["message"] = "This is a placeholder for security purposes"
-    app.logger.info(f"loading readme from {readme_url}")
-    readme_request = requests.get(readme_url)
-    base64_bytes = base64.b64encode(readme_request.content)
-    content["content"] = base64_bytes.decode("utf-8")
+    readme_path = os.path.join(os.path.dirname(__file__), "web/static/README.md")
+    with open(readme_path, "rb") as f:
+        base64_bytes = base64.b64encode(f.read())
+    content = {
+        "branch": branchname,
+        "message": "This is a placeholder for security purposes",
+        "content": base64_bytes.decode("utf-8"),
+    }
     blob_request = requests.put(
         base_query_url + "/contents/README.md",
         headers=headers,
-        data=json.dumps(content),
+        json=content,
     )
 
     app.logger.log(10, blob_request.request.body)
@@ -71,7 +72,7 @@ def create_initial_commit(base_query_url, headers, branchname):
     commit_data["message"] = "initial commit"
     commit_data["tree"] = blob_sha
     commit_request = requests.post(
-        base_query_url + "/git/commits", headers=headers, data=json.dumps(commit_data)
+        base_query_url + "/git/commits", headers=headers, json=commit_data
     )
     app.logger.log(10, commit_request.content)
     app.logger.log(10, f"commit_request.status_code: {commit_request.status_code}")
@@ -79,7 +80,7 @@ def create_initial_commit(base_query_url, headers, branchname):
     p_commit_data = {}
     p_commit_data["force"] = True
     p_commit_request = requests.post(
-        base_query_url + "", headers=headers, data=json.dumps(p_commit_data)
+        base_query_url + "", headers=headers, json=p_commit_data
     )
     app.logger.log(10, p_commit_request.content)
     app.logger.log(10, f"p_commit_request.status_code: {p_commit_request.status_code}")
@@ -101,7 +102,7 @@ def restrict_commits(base_query_url, headers, branch_name):
     app.logger.log(10, req_url)
     with open(POLICY_PATH) as f:
         parsed = json.load(f)
-    restrict_request = requests.put(req_url, headers=headers, data=json.dumps(parsed))
+    restrict_request = requests.put(req_url, headers=headers, json=parsed)
     app.logger.log(10, restrict_request.content)
     app.logger.log(10, f"restrict_request.status_code: {restrict_request.status_code}")
 
@@ -141,7 +142,7 @@ def create_issue(base_query_url, headers, commit_url):
         )
     req_url = base_query_url + f"/issues"
     app.logger.log(10, req_url)
-    issue_request = requests.post(req_url, headers=headers, data=json.dumps(data))
+    issue_request = requests.post(req_url, headers=headers, json=data)
     app.logger.log(10, issue_request.content)
     app.logger.log(10, issue_request.status_code)
 
@@ -183,7 +184,7 @@ def hook_root():
             token = os.getenv("GITHUB_TOKEN")
             headers = {
                 "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json",
+                "Accept": "application/vnd.github+json",
             }
             repo_name = payload["repository"]["full_name"]
             # default_branch_name = payload["repository"]["default_branch"]
