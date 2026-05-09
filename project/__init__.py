@@ -58,9 +58,12 @@ def create_initial_commit(base_query_url, headers, branchname):
         json=content,
     )
 
-    app.logger.log(10, blob_request.request.body)
-    app.logger.log(10, blob_request.request.headers)
-    app.logger.log(10, blob_request.content)
+    app.logger.info(f"create file status: {blob_request.status_code}")
+    app.logger.info(f"create file response: {blob_request.text}")
+    if blob_request.status_code not in (200, 201):
+        raise RuntimeError(
+            f"Failed to create initial commit: {blob_request.status_code} {blob_request.text}"
+        )
     blob_sha = blob_request.json()["commit"]["tree"]["sha"]
     commit_sha = blob_request.json()["commit"]["sha"]
     commit_html_url = blob_request.json()["commit"]["html_url"]
