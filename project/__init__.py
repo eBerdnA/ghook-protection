@@ -16,6 +16,7 @@ readme_url = app_url + "/static/README.md"
 policy_url = app_url + "/static/restrict.json"
 
 POLICY_PATH = os.path.join(os.path.dirname(__file__), "web/static/restrict.json")
+CODEOWNERS_PATH = os.path.join(os.path.dirname(__file__), "web/static/CODEOWNERS")
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -90,6 +91,57 @@ def create_initial_commit(base_query_url, headers, branchname):
     return commit_html_url
 
 
+def create_codeowners(base_query_url, headers, branch_name):
+    """upload CODEOWNERS file to the new repository
+
+    Parameters
+    ----------
+    base_query_url: str
+    headers: dict[str, str]
+        headers for GitHub API request, must include auth token and accepted content type
+    branch_name: str
+        name of branch where file should be uploaded
+
+    Returns
+    ------
+    None
+    """
+    app.logger.info(f"creating CODEOWNERS for {base_query_url}")
+    with open(CODEOWNERS_PATH, "r") as f:
+        template = f.read()
+
+    owner = os.getenv("GITHUB_OWNER")
+    content_str = template.replace("<OWNER>", owner)
+    base64_bytes = base64.b64encode(content_str.encode("utf-8"))
+
+    content = {
+        "branch": branch_name,
+        "message": "Add CODEOWNERS",
+        "content": base64_bytes.decode("utf-8"),
+    }
+
+    req_url = base_query_url + "/contents/.github/CODEOWNERS"
+    app.logger.log(10, f"PUT {req_url}")
+
+    blob_request = requests.put(
+        req_url,
+        headers=headers,
+        json=content,
+    )
+
+    app.logger.log(10, f"create codeowners status: {blob_request.status_code}")
+    app.logger.log(10, f"create codeowners response: {blob_request.text}")
+
+    if blob_request.status_code == 422:
+        app.logger.warning(f"CODEOWNERS already exists, skipping")
+        return
+
+    if blob_request.status_code not in (200, 201):
+        raise RuntimeError(
+            f"Failed to create CODEOWNERS: {blob_request.status_code} {blob_request.text}"
+        )
+
+
 def restrict_commits(base_query_url, headers, branch_name):
     """create branch protection
 
@@ -135,6 +187,10 @@ def create_issue(base_query_url, headers, commit_url):
         + "\r\n```\r\n"
         + json.dumps(parsed, indent=4, sort_keys=True)
         + "\r\n```\r\n"
+        + "A CODEOWNERS file has also been created with @"
+        + os.getenv("GITHUB_OWNER")
+        + " as the default owner."
+        + "\r\n"
         + "Please see the documentation for a definition of the different options. - "
         + "[Update branch protection](https://docs.github.com/en/rest/branches/branch-protection#update-branch-protection)"
     )
@@ -204,6 +260,8 @@ def hook_root():
                 commit_url = create_initial_commit(
                     base_query_url, headers, default_branch_name
                 )
+            # create CODEOWNERS
+            create_codeowners(base_query_url, headers, default_branch_name)
             # restrict commits
             restrict_commits(base_query_url, headers, default_branch_name)
             # create issue with policy content and mention
