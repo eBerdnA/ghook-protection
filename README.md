@@ -1,6 +1,6 @@
 # Introduction
 
-This project can be used to auto protect the master/main branch of newly created GitHub projects. The protection process is triggered by [GitHub Webhooks](https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks). Please note that this is only possible for projects inside an [Organizations](https://docs.github.com/en/organizations). Because only organizations provide the necessary [webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#project) for acting upon project creation.
+This project can be used to auto protect the master/main branch of newly created GitHub projects. The protection process is triggered by [GitHub Webhooks](https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks). Please note that this is only possible for projects inside an [Organizations](https://docs.github.com/en/organizations). Because only organizations provide the necessary [webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#project) for acting upon project creation. A `.github/CODEOWNERS` file is also created with `@GITHUB_OWNER` as the default owner.
 
 The current implementation does only act upon the action `created`. Any other actions are ignored.
 
