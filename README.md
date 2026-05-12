@@ -28,6 +28,13 @@ When addtional requirements are added to the project please use the following co
 
     pip freeze | grep -v "pkg-resources" > requirements.txt
 
+## Running tests
+
+To run the tests, install the development dependencies and run `pytest`:
+
+    pip install -r requirements-dev.txt
+    PYTHONPATH=. pytest
+
 # Production
 
 ## Run
