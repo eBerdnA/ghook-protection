@@ -66,24 +66,28 @@ def test_hooktest_success_with_initial_commit(client, signed_request, mocker):
         # Dead code calls (slated for removal but still in code)
         m.post("https://api.github.com/repos/test-owner/test-repo/git/commits", status_code=201, json={})
         m.post("https://api.github.com/repos/test-owner/test-repo", status_code=200, json={})
-        
-        # 3. Restrict commits
+
+        # 3. Create CODEOWNERS
+        m.put("https://api.github.com/repos/test-owner/test-repo/contents/.github/CODEOWNERS",
+              status_code=201, json={})
+
+        # 4. Restrict commits
         m.put("https://api.github.com/repos/test-owner/test-repo/branches/main/protection", status_code=200, json={})
-        
-        # 4. Create issue
+
+        # 5. Create issue
         m.post("https://api.github.com/repos/test-owner/test-repo/issues", status_code=201, json={})
-        
+
         response = signed_request("/hooktest", payload, "test-secret")
         assert response.status_code == 200
         assert response.get_json() == {"message": "Success"}
-        
+
         assert m.called
         # Check if restrict_commits was called with "main"
-        assert m.request_history[4].url == "https://api.github.com/repos/test-owner/test-repo/branches/main/protection"
-        assert m.request_history[4].method == "PUT"
-        
+        assert m.request_history[5].url == "https://api.github.com/repos/test-owner/test-repo/branches/main/protection"
+        assert m.request_history[5].method == "PUT"
+
         # Check if create_issue was called with the commit_url
-        issue_body = m.request_history[5].json()["body"]
+        issue_body = m.request_history[6].json()["body"]
         assert "http://github.com/commit-url" in issue_body
 
 def test_hooktest_success_no_initial_commit(client, signed_request, mocker):
@@ -98,21 +102,25 @@ def test_hooktest_success_no_initial_commit(client, signed_request, mocker):
     with rm.Mocker() as m:
         # 1. Check commits -> return 200 (not empty repo)
         m.get("https://api.github.com/repos/test-owner/test-repo/commits", status_code=200, json=[])
-        
-        # 2. Restrict commits
+
+        # 2. Create CODEOWNERS
+        m.put("https://api.github.com/repos/test-owner/test-repo/contents/.github/CODEOWNERS",
+              status_code=201, json={})
+
+        # 3. Restrict commits
         m.put("https://api.github.com/repos/test-owner/test-repo/branches/main/protection", status_code=200, json={})
-        
-        # 3. Create issue
+
+        # 4. Create issue
         m.post("https://api.github.com/repos/test-owner/test-repo/issues", status_code=201, json={})
-        
+
         response = signed_request("/hooktest", payload, "test-secret")
         assert response.status_code == 200
         assert response.get_json() == {"message": "Success"}
-        
+
         # Ensure create_initial_commit (PUT /contents/README.md) was NOT called
         for req in m.request_history:
             assert "/contents/README.md" not in req.url
-            
+
         # Check if create_issue was called without commit_url
-        issue_body = m.request_history[2].json()["body"]
+        issue_body = m.request_history[3].json()["body"]
         assert "The following commit has been automatically created" not in issue_body
